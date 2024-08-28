@@ -4,8 +4,13 @@ import * as contactsService from "../services/contactsServices.js";
 
 const getAllContacts = async (req, res) => {
   const { id: owner } = req.user;
+  const { page = 1, limit = 20, favorite = null } = req.query;
 
-  const result = await contactsService.listContacts({ owner });
+  console.log(req.query);
+  const result = await contactsService.listContacts(
+    { owner },
+    { page, limit, favorite }
+  );
 
   res.json(result);
 };

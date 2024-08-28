@@ -1,29 +1,49 @@
 import Contact from "../db/models/Contacts.js";
-export async function listContacts(query = {}) {
-  return Contact.findAll({
+import { Op } from "sequelize";
+
+export async function listContacts(
+  query = {},
+  { page = 1, limit = 20, favorite = null }
+) {
+  const normalizedLimit = Number(limit);
+  const offset = (Number(page) - 1) * normalizedLimit;
+  const favoriteParsed = favorite === "true" ? true : false;
+
+  if (!!favorite) {
+    if (favoriteParsed) {
+      return await Contact.findAll({
+        order: [["favorite", "DESC"]],
+        where: query,
+        offset,
+        limit: normalizedLimit,
+      });
+    } else {
+      return await Contact.findAll({
+        order: [["favorite", "ASC"]],
+        where: query,
+        offset,
+        limit: normalizedLimit,
+      });
+    }
+  }
+
+  return await Contact.findAll({
     where: query,
+    offset,
+    limit: normalizedLimit,
   });
 }
 
 export async function getContactById(query) {
-  const num_id = Number(query.id);
-
   const result = Contact.findOne({
-    where: {
-      id: num_id,
-      // owner: query.owner,
-    },
+    where: query,
   });
 
   return result;
 }
 
 export async function addContact(data) {
-  console.log(data);
-
   const newContact = await Contact.build(data);
-
-  console.log(newContact);
 
   return newContact.save();
 }
@@ -41,24 +61,29 @@ export async function removeContact(query) {
 }
 
 export async function updateContact(data, query) {
-  await Contact.update(data, {
-    where: {
-      query,
-    },
-  });
+  const contact = await getContactById(query);
+  if (!contact) {
+    return null;
+  }
 
-  return getContactById(id);
+  return contact.update(data, {
+    returning: true,
+  });
 }
 
 export async function updateStatusContact(data, query) {
-  await Contact.update(
+  const contact = await getContactById(query);
+  if (!contact) {
+    return null;
+  }
+
+  return contact.update(
     { favorite: data["favorite"] },
     {
       where: {
         query,
       },
+      returning: true,
     }
   );
-
-  return getContactById(id);
 }
