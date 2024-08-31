@@ -7,6 +7,7 @@ import authenticate from "../middleware/authenticate.js";
 import validateBody from "../helpers/validateBody.js";
 
 import { authSignupSchema } from "../schemas/authSchema.js";
+import upload from "../middleware/upload.js";
 
 const signupMiddleware = validateBody(authSignupSchema);
 
@@ -24,6 +25,13 @@ authRouter.patch(
   "/subscription",
   authenticate,
   authControllers.updateSubscriptionUser
+);
+
+authRouter.patch(
+  "/avatars",
+  authenticate,
+  upload.single("avatarURL"),
+  authControllers.updateAvatarUser
 );
 
 export default authRouter;
