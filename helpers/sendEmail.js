@@ -16,10 +16,10 @@ const nodemailerConfig = {
 
 const transport = nodemailer.createTransport(nodemailerConfig);
 
-const sendEmail = (data) => {
+const sendEmail = async (data) => {
   const email = { ...data, from: EMAIL_FROM };
 
-  return transport.sendMail(email);
+  return await transport.sendMail(email);
 };
 
 export default sendEmail;
