@@ -103,6 +103,13 @@ const updateSubscriptionUser = async (req, res) => {
 const avatarPath = path.resolve("public", "avatars");
 
 const updateAvatarUser = async (req, res) => {
+  if (!req.file) {
+    throw HttpError(
+      400,
+      "Body must have at least one file in the avatarURL field"
+    );
+  }
+
   const { path: oldPath, filename } = req.file;
   const newPath = path.join(avatarPath, filename);
   await fs.rename(oldPath, newPath);
