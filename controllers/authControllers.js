@@ -11,9 +11,9 @@ import HttpError from "../helpers/HttpError.js";
 
 const { JWT_SECRET } = process.env;
 
-const checkInput = (data) => {
+const checkInput = (data, message = "Body must have at least one field") => {
   if (Object.keys(data).length === 0) {
-    throw HttpError(400, "Body must have at least one field");
+    throw HttpError(400, message);
   }
 };
 
@@ -36,6 +36,10 @@ const login = async (req, res) => {
   const user = await authServices.findUser({ email });
   if (!user) {
     throw loginError;
+  }
+
+  if (!user.verify) {
+    throw HttpError(401, "Email not verified");
   }
 
   const passwordCompare = await bcrypt.compare(password, user.password);
@@ -119,6 +123,49 @@ const updateAvatarUser = async (req, res) => {
   });
 };
 
+const verifyUser = async (req, res) => {
+  const { verificationToken } = req.params;
+
+  const user = await authServices.findUser({ verificationToken });
+  if (!user) {
+    throw HttpError(404, "User not found");
+  }
+
+  await authServices.updateUser(
+    { verificationToken },
+    {
+      verify: true,
+      verificationToken: null,
+    }
+  );
+
+  return res.status(200).json({
+    message: "Verification successful",
+  });
+};
+
+const verifyUserRepeat = async (req, res) => {
+  checkInput(req.body, "missing required field email");
+
+  const { email } = req.body;
+
+  const user = await authServices.findUser({ email });
+
+  if (!user) {
+    throw HttpError(404, "User not found");
+  }
+
+  if (!user.verificationToken) {
+    throw HttpError(400, "Verification has already been passed");
+  }
+
+  await authServices.sendVerifyEmail(email, user.verificationToken);
+
+  return res.status(200).json({
+    message: "Verification email sent",
+  });
+};
+
 export default {
   signup: ctrlWrapper(signup),
   login: ctrlWrapper(login),
@@ -126,4 +173,6 @@ export default {
   logout: ctrlWrapper(logout),
   updateSubscriptionUser: ctrlWrapper(updateSubscriptionUser),
   updateAvatarUser: ctrlWrapper(updateAvatarUser),
+  verifyUser: ctrlWrapper(verifyUser),
+  verifyUserRepeat: ctrlWrapper(verifyUserRepeat),
 };
